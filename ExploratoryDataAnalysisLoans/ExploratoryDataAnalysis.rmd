@@ -1,0 +1,925 @@
+
+---
+title: "Exploratory Data Analysis on Loans"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r global_options, include=FALSE}
+knitr::opts_chunk$set(warning=FALSE, message=FALSE)
+```
+
+by KRISTIJAN BAKARIC
+========================================================
+
+Introduction to the dataset that EDA will be carried on: 
+ 
+Last updated 03/11/2014
+
+This data set contains 113,937 loans with 81 variables on each loan, including 
+loan amount, borrower rate (or interest rate), current loan status, 
+borrower income, borrower employment status, borrower credit history,
+and the latest payment information.
+
+There are MANY variables in this data set and you are not 
+expected to explore all of them. You should explore between 
+10-15 variables in your analysis.
+Expected time to analyze the dataset 15-30 hours
+
+**Since the dataset is to vast to explore in this excercise I will 
+intimately examine only 10-15 variables and create a dataframe from 
+the relevant selection.**
+
+This variable dictionary explains the variables in the subset of the data set
+that I will explore:
+
+* listing keys; Unique key for each listing, 
+same value as the 'key' used in the listing object in the API.
+
+* BorrowerState: The two letter abbreviation of the state of the address of the 
+
+
+* Term: The length of the loan expressed in months.
+
+
+* LoanStatus: The current status of the loan: Cancelled,  Chargedoff, Completed, 
+Current, Defaulted, FinalPaymentInProgress, PastDue. 
+The PastDue status will be accompanied by a delinquency bucket.
+ 
+* LoanOriginalAmount: The origination amount of the loan.
+
+* ClosedDate: Closed date is applicable for Cancelled, Completed, Chargedoff 
+and Defaulted loan statuses. 
+
+
+* BorrowerRate: The Borrower's interest rate for this loan.
+
+
+* ListingCategory..numeric.: The category of the listing that the borrower 
+selected when posting their 
+listing: 0 - Not Available, 1 - Debt Consolidation, 2 - Home Improvement, 
+3 - Business, 4 - Personal Loan, 5 - Student Use, 6 - Auto, 7- Other, 
+8 - Baby&Adoption, 9 - Boat, 10 - Cosmetic Procedure, 
+11 - Engagement Ring, 12 - Green Loans, 13 - Household Expenses, 
+14 - Large Purchases, 15 - Medical/Dental, 16 - Motorcycle, 
+17 - RV, 18 - Taxes, 19 - Vacation, 20 - Wedding Loans
+
+
+* Occupation: The Occupation selected by the Borrower at the time they created 
+  the listing.
+
+
+* EmploymentStatus: The employment status of the borrower at the time they 
+  posted the listing.
+
+
+* IsBorrowerHomeowner: A Borrower will be classified as a homowner if they 
+have a mortgage on their credit profile or provide 
+documentation confirming they are a homeowner.
+
+
+* IncomeRange: The income range of the borrower at the time the listing 
+ was created.
+
+
+* DebtToIncomeRatio_ The debt to income ratio of the borrower at the time 
+the credit profile was pulled. This value is Null if the 
+debt to income ratio is not available. This value is 
+capped at 10.01 (any debt to income ratio larger than
+1000% will be returned as 1001%).
+
+
+* IncomeVerifiable: The borrower indicated they have the required documentation 
+to support their income.
+
+* LoanOriginationDate- date the loan was originated
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE, packages}
+# Load all of the packages that you end up using in your analysis in this code
+# chunk.
+#install.packages("ggplot2", dependencies = T) 
+#install.packages("knitr", dependencies = T)
+#install.packages("dplyr", dependencies = T)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+```
+
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+## In the following section I will load the data, subset the data to a managable
+## variable size, inspect briefly subset variables
+## and will join the states name with state codes
+
+## Load the Dataset
+df <- read.csv("C:\\Users\\Bruker\\edukacija\\analytics_term_2\\eda\\project1\\prosperLoanData.csv",na.strings=c("NA","NaN", " ",""))
+
+## load lookup table for country codes                        
+stateslookup <- read.csv("C:\\Users\\Bruker\\edukacija\\analytics_term_2\\eda\\project1\\us_states2.csv")
+
+## there is a mistmatch ofnumber of unique values in country codes in dataset
+## and the number of country tables in the lookup table
+#length(unique(df$BorrowerState))
+#length(unique(stateslookup$StateCode))  
+
+### attach full country names to the state codes
+df <- df %>% 
+  left_join(stateslookup, by = c("BorrowerState" = "StateCode"))
+
+
+### subset the original dataframe to 10-15 variables
+
+cols <- c("ListingKey", "LoanOriginalAmount","BorrowerState","Term","LoanStatus"
+          , "ClosedDate", "BorrowerRate","ListingCategory..numeric.", 
+          "Occupation", "EmploymentStatus", "IsBorrowerHomeowner","IncomeRange",
+          "DebtToIncomeRatio", "StateCapital" , "LoanOriginationDate")
+
+df_s <- df %>% 
+  select(cols)
+
+### inspect the head of the subset of the dataset for the EDA
+head(df_s)
+
+```
+
+# Univariate Plots Section
+
+```{r echo=FALSE, fig.width=10, fig.height=6,  message=FALSE, warning=FALSE}
+### inspect the data health of the selected columns
+#install.packages("ggthemes")
+#install.packages("scales")
+#install.packages("Gmisc")
+#install.packages("funModeling")
+library("ggthemes")
+library("scales")
+library(dplyr) ### library used for creating an additional derived metric 
+              ###"DataCompletePerc"
+library(funModeling) ### library utilized for deriving metrics dataframe
+
+
+### before any data exploritory analysis I like to identify data completnees 
+### report and visualize it utilizing funModeling library
+
+DataFrameMetrics<- df_status (df_s)
+DataFrameMetrics<- DataFrameMetrics %>% 
+  mutate(DataCompletePerc=(p_na-100)*-1) ### % per column that has non-NA data
+
+ggplot(DataFrameMetrics,aes(reorder(variable,p_na),
+                            DataCompletePerc,fill=DataCompletePerc)) +
+   geom_bar(stat="identity")+
+   theme_hc() +
+   scale_colour_hc()+
+   theme(axis.text.x=element_text(angle=45,hjust=1))+
+   guides(fill=FALSE) +
+   theme(axis.text=element_text(size=14),
+   axis.title=element_text(size=20,face="bold")) +
+   ggtitle("") +
+   xlab("Column Names") + ylab("Columns complete [%]")+
+   geom_hline(yintercept = 50, color="red",size=1.5) +
+   theme( # remove the vertical grid lines
+   panel.grid.major.x = element_line( size=.1, color="black" ) ,
+      # explicitly set the horizontal lines (or they will disappear too)
+      panel.grid.major.y = element_line( size=.1, color="black" )
+   )
+
+```
+
+From the variables I will explore, BorrowerState, Occupation, EmploymentStatus,
+DebtToIncomeRatio and State Capital have percentage of missing observations 
+in magnitude of up to 7.5%. CLosedDate for the loans has 
+the biggest loss of observations, 51.6%
+
+
+```{r echo=FALSE, Sumary}
+summary(df_s)
+```
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6, Univariate_Plots}
+
+summary(df_s$LoanOriginalAmount)
+
+#plot
+ggplot(data=df_s, aes(df_s$LoanOriginalAmount)) + 
+  geom_histogram(breaks=seq(0, max(df_s$LoanOriginalAmount), by = 1000), 
+                 col="black", 
+                 alpha = .6,
+                 aes(fill=..count..)) + 
+  labs(title="Histogram for Loan Amount") +
+  labs(x="Loan Amount [USD]", y="Count") +
+  scale_fill_gradient("Count", low = "green", high = "red") 
+
+#plot
+#grid.arrange( ggplot(aes(x=LoanOriginalAmount), 
+ #       data = df_s) +
+  #geom_histogram( bins = 30) ,
+   #ggplot(aes(x=1, y=LoanOriginalAmount), 
+    #    data = df_s) +
+  #geom_boxplot( )  , nrow =1)
+
+```
+
+Distribution of Original loan amounts is right tailed and it has 5 distinct
+peaks that needs to be investigated. Mean loan amount is 8337$
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+summary(df_s$LoanStatus)
+
+ggplot(data=df_s, aes(df_s$LoanStatus)) + 
+  geom_histogram(col="black", alpha = .6, stat="count") + 
+  labs(title="Histogram for Loan Status") +
+  labs(x="Loan Status", y="Count") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+
+Largest count of loans is still taged as current. From the past due loans 
+the largest cathegory is past due between 1-15 days.
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+
+summary(df_s$DebtToIncomeRatio)
+
+ggplot(data=df_s, aes(df_s$DebtToIncomeRatio)) + 
+  geom_histogram(binwidth = 0.05,
+                 col="black", 
+                 alpha = .6,
+                 aes(fill=..count..)) + 
+  labs(title="Histogram for DebtToIncomeRatio") +
+  labs(x="DebtToIncomeRatio - log scale", y="Count") +
+  scale_fill_gradient("Count", low = "green", high = "red") +
+  xlim(0, 2) +
+  scale_x_log10() 
+
+### calculate ratio of customers that have more than 4 times income 
+## to debt ratio
+df_s %>% 
+  select(DebtToIncomeRatio) %>% 
+  filter(DebtToIncomeRatio > 4) %>% 
+  summarise(count= n()) %>% 
+  mutate(ratio_4_times = (count / 105383) * 100)
+
+```
+
+Mean debth to income ratio is 0.28 and maximum is 10.010.  The count to loans
+that have ratio more than 4 times compared to all loans (minus NA s) is 0.35%.
+
+```{r echo=FALSE}
+
+#plot
+ggplot(df_s, aes(factor(Term/12))) +
+  geom_bar() +
+  labs(title="Histogram for Term Length in Years") +
+  labs(x="Term Length [Years]", y="Count") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+
+```
+
+Length of loans are distributed in 3 cathegories, 
+1 3 and 5 year loans where count is 3>5>1 years.
+
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+summary(df_s$BorrowerRate)
+
+#plot
+ggplot(data=df_s, aes(df_s$BorrowerRate)) + 
+  geom_histogram(col="black", 
+                 alpha = .6,
+                 aes(fill=..count..)) + 
+  labs(title="Histogram for Borrowers Interest Rates per entire loan") +
+  labs(x="Borrower Interest Rate [%]", y="Count") +
+  scale_fill_gradient("Count", low = "green", high = "red") 
+
+```
+
+Distribution of Borrowers interest loans is quite narrow with a mean at 0.19%.
+Distribution is a slightly skewed to the left.
+The values it self seem a bit suspiceous. I would expect to see interest rates
+at least one magnitude higher from 0 to 5 percent so it could be an issue with
+the original dataset. I real case scenario I would have a direct dialogue with
+a domain expert in the topic:)
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+summary(df_s$IncomeRange)
+
+df_s$IncomeRange <- factor(df_s$IncomeRange, 
+                           c("$0", "$1-24,999",
+"$25,000-49,999", "$50,000-74,999", 
+"$75,000-99,999", "$100,000+","Not displayed", "Not employed"))
+
+ggplot(data=df_s, aes(df_s$IncomeRange)) + 
+  geom_histogram(col="black", alpha = .6, stat="count") + 
+  labs(title="Bar chart for Income Range") +
+  labs(x="Income Range [USD]", y="Count") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+
+```
+
+The highest income range for the borrowers is in two cathegories which in total
+range between 25 000 and 74 999 us dollars.
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+summary(df_s$EmploymentStatus)
+names(df_s)
+ggplot(data=df_s, aes(reorder(EmploymentStatus,EmploymentStatus,
+                     function(x)-length(x))))  + 
+  geom_histogram(col="black", alpha = .6, stat="count") + 
+  labs(title="Bar chart for Employement status") +
+  labs(x="Employement Status", y="Count") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+```
+
+90% of the borrowers that take loans are either Employed, Full-time eployed or 
+Self-Employed
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+
+ggplot(data=df_s, aes(reorder(Occupation,Occupation,
+                     function(x)-length(x)))) + 
+  geom_histogram(col="black", alpha = .6, stat="count") + 
+  labs(x="Occupation", y="Count") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
+```
+
+Top 5 occupations of borrowers were as following: Professional, Computer 
+programmer, Executive, Teacher and Administrative assistant.
+Bottom of the list is dominated by students.
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+summary(df_s$IsBorrowerHomeowner)
+
+##plot
+ggplot(data=df_s, aes(reorder(IsBorrowerHomeowner,IsBorrowerHomeowner,
+                     function(x)-length(x)))) + 
+  geom_bar(col="black", alpha = .6, stat="count") + 
+  labs(x="IsBorrowerHomeowner", y="Count") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+
+  
+```  
+
+In the entire dataset number of homeowners vs the ones that do not own a home
+is very similar (False- 56459 vs True - 57478).
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+##extracting years from LoanOriginationDate
+df_s <- df_s %>% 
+  mutate(LoanOriginationYear = (substring(df_s$LoanOriginationDate,0,4)))
+##plot
+ggplot(data=df_s, aes(LoanOriginationYear))+ 
+  geom_bar(col="black", alpha = .6, stat="count") + 
+  labs(x="LoanOriginationYear", y="Count") +
+  theme(axis.text.x = element_text(angle = 0, hjust = 1))
+```  
+
+Distribution of years when the loan were originated. Note the peak in 2013.
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6}
+# create lookup table
+listingcode = c(0, 1, 2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 
+                16, 17, 18, 19, 20) 
+listingname = c("Not Avilable", "Debt Consolidation", "Home Improvement", 
+                "Business", "Personal Loan", 
+           "Student Use", "Auto", "Other", "Baby and Adoption", "Boat",
+           "Cosmetic Procedure", "Engagement Ring", "Green Loans",
+           "Household Expenses", "Large Purchases","Medical and Dental",
+           "Motorcycle","RV", "Taxes", "Vacation", "Wedding Loans")
+lookup = data.frame(listingcode = as.integer(listingcode), 
+                    ListingCathegory = listingname)
+
+
+## Map a lookup table to the df_s
+df_s <- df_s %>%
+   left_join(lookup, by= c("ListingCategory..numeric." ="listingcode")) 
+
+
+## plot
+ggplot(data=df_s, aes(reorder(ListingCathegory,ListingCathegory,
+                     function(x)-length(x)))) + 
+  geom_histogram(col="black", alpha = .6, stat="count") + 
+  labs(title="Bar chart for ListingCathegory") +
+  labs(x="ListingCathegory", y="Count") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+  
+
+```
+
+Most common listing cathegory for a loan are Debt consolidation,
+Home improvement and Business, if we exclude Not available and other.
+
+
+# Univariate Analysis
+
+### What is the structure of your dataset?
+
+Subset of the data consists of 15 variables and is spread in 113937 rows.
+Data completeness report gave us an insight that most of the observations have
+values apart from the ClosedDate which is missing in 50% of the cases, and
+that is justifiable since it applies only to Cancelled, Completed, Chargedoff 
+and Defaulted loan statuses.
+
+I didn t manage to understand the root cause for the 871 of duplicated ListingKeys.
+ 
+
+### What is/are the main feature(s) of interest in your dataset?
+Main feature of interest in the dataset is the amount of loan.
+
+### What other features in the dataset do you think will help support your 
+### \ Did you create any new variables from existing variables in the dataset?
+Supporting features that I brought in externally are related to mapping out
+the US state codes into a human language. I did the same with the 
+listing cathegories but  remapping was done from an additional
+explanatory excel spreadsheet.
+Spatial context - geometry of the states would be of hel to see spatial 
+distribution of loans and loan related variables.
+
+
+### Of the features you investigated, were there any unusual distributions? 
+### \ Did you perform any operations on the data to tidy, adjust, or change the 
+### form \ of the data? If so, why did you do this?
+Form of the data was not changed, i.e. data is in tidy format.
+
+
+# Bivariate Plots Section
+
+```{r echo=FALSE, fig.width=10, fig.height=6, essage=FALSE, warning=FALSE}
+
+ggplot(df_s, aes(factor(Term/12),LoanOriginalAmount, fill=Term)) +
+  labs(title="Box Plot") +
+  labs(x="Term length for loans [years]", y="Loan Amount [USD]") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
+  theme(legend.position="none") +
+  geom_jitter( alpha = .01)  + 
+  geom_boxplot( alpha = .5,color = 'blue')+ 
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 3)
+
+
+```
+
+There is a positive relationship when comparing median as a metric between
+Loan amounts and 1, 3 and 5 years as lenght of loan. Higher to Term,
+higher the median loan amount.
+
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
+## Summarizing original amounts of loans per listing cathegory
+MeanPerCathegory <- df_s %>% 
+  group_by(ListingCathegory) %>% 
+  summarise(mean = mean(LoanOriginalAmount)) %>% 
+  arrange(desc(mean))
+
+#plot
+fill <- "#4271AE"
+line <- "#1F3552"
+ggplot(df_s, aes(x=ListingCathegory, y=LoanOriginalAmount)) +
+  geom_boxplot(fill = fill, colour = line, alpha = 0.7,
+                     outlier.colour = "#1F3552", outlier.shape = 20) +
+  labs(x="ListingCathegory", y="LoanOriginalAmount[USD]")+
+  theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+  theme(legend.position="none")  +
+  geom_jitter( alpha = .01)  + 
+  geom_boxplot( alpha = .5,color = 'blue')+ 
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 3) 
+ 
+```
+
+Top 3 highest loans on average are targeting Debt consolidation, baby and 
+adoption,and business, on the other side of the spectrum top 3 lowest loans 
+on average are targeting student use, personal loans and buying an automobile.
+
+```{r echo=FALSE, fig.width=10, fig.height=6,  message=FALSE, warning=FALSE}
+## summarizing means of original loan amounts per occupation groups
+## filtered datasets for means over 10 000USD
+MeanLoanPerOccupation <- df_s %>% 
+  group_by(Occupation) %>% 
+  summarise(mean = mean(LoanOriginalAmount)) %>% 
+  filter(mean>10000)
+
+# Plot
+theme_set(theme_bw())
+ggplot(MeanLoanPerOccupation, aes(reorder(Occupation,mean),mean)) + 
+  geom_point(size=3) + 
+  geom_segment(aes(x=Occupation, 
+                   xend=Occupation, 
+                   y=0, 
+                   yend=mean)) + 
+  labs(title="Lollipop Chart", 
+       subtitle="Occupation Vs Mean Loan") + 
+  labs(x="Occupation", y="Mean Loan Amount [USD]") +
+  theme(axis.text.x = element_text(angle=65, vjust=0.6)) +
+    coord_flip()
+
+```
+
+Top 5 on average highest loans are initiated by folowing occupation groups:
+Judges, Pharmacists and Doctors (dataset filtered on more than 10 000USD loans).
+
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
+
+#MeanInterestsPerLoanStatus <- df_s %>% 
+ # group_by(ListingCathegory) %>% 
+  #summarise(mean = mean(LoanOriginalAmount)) %>% 
+  #arrange(desc(mean))
+
+## plot
+ggplot(df_s, aes(x=LoanOriginalAmount, y=DebtToIncomeRatio)) +
+  geom_jitter(alpha=0.05,aes()) +
+  geom_smooth() +
+  scale_y_log10() +
+  labs(x="Original Loan Amount [USD]", y="Debt to Income Ratio") 
+
+  #theme(legend.position="none")  +
+  # scale_colour_gradientn(colours=rainbow(4)) +
+ # geom_encircle(aes(x=LoanOriginalAmount, y=DebtToIncomeRatio), 
+  #              data=df_s_retired, 
+   #             color="red", 
+    #            size=2, 
+     #           expand=0.08)
+
+#df_s_retired <- df_s %>% 
+ # filter(EmploymentStatus=="Retired")
+
+```
+
+What I expected to see when plotting Original Loan amount against depth to 
+to income ratio is more negative correlation. What is clear in this plot iz that
+if we exclude >10 debt to income ratio, is that in a range of 1 to 10 of 
+debt to income ratio there is very few data point in the space between
+10 000 and 30 000 when comparing it to below 10 000 where the majority of the 
+points lay i.e. burrowers with higher DTI ratio take lower loans.
+
+
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
+
+## combining distinct combinations of Occupation groups and income range
+## groups, counting them and keeping only counts above 2000.
+MeanIncomePerOccupation <- df_s %>% 
+  group_by(Occupation,IncomeRange) %>% 
+  tally() %>% 
+  mutate(OccupationPlusIncome = paste(Occupation,"AND", IncomeRange)) %>% 
+  filter(n>2000)
+
+#plot
+theme_set(theme_bw())
+ggplot(MeanIncomePerOccupation, aes(reorder(OccupationPlusIncome,n),n)) + 
+  geom_point(size=3) + 
+  geom_segment(aes(x=OccupationPlusIncome, 
+                   xend=OccupationPlusIncome, 
+                   y=0, 
+                   yend=n)) + 
+  labs(title="Lollipop Chart", 
+       subtitle="OccupationPlusIncome Vs Count") + 
+  labs(x="OccupationPlusIncome", y="Count") +
+  theme(axis.text.x = element_text(angle=80, vjust=0.6)) +
+    coord_flip()
+
+```
+
+Highest count of initiated loans in the datacomes from Professionals 
+in the income groups: 50,000-74,999USD and 100,000+ USD (if we exclude 
+combinations defined as Other).
+
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
+
+
+#plot
+fill <- "#4271AE"
+line <- "#1F3552"
+ggplot(df_s, aes(x=LoanOriginationYear, y=BorrowerRate)) +
+  geom_boxplot(fill = fill, colour = line, alpha = 0.7,
+                     outlier.colour = "#1F3552", outlier.shape = 20) +
+  labs(x="Loan Originated [Year]", y="Borrower Interest Rate for the Loan [%]")+
+  geom_jitter( alpha = .01)  + 
+  geom_boxplot( alpha = .5,color = 'blue')+ 
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 3) 
+
+  
+
+
+```
+
+
+It is evident that median BorrowerRate has been increasing over the years with
+a peak in 2011 and dropping again towards 2014. In addition there is a trend
+in narrowing IQR from 2010 onwards.
+
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE}
+
+#plot
+fill <- "#4271AE"
+line <- "#1F3552"
+ggplot(df_s, aes(x=LoanOriginationYear, y=LoanOriginalAmount)) +
+  geom_boxplot(fill = fill, colour = line, alpha = 0.7,
+                     outlier.colour = "#1F3552", outlier.shape = 20)  +
+  labs(x="Loan Originated [Year]", y="Original Loan Amount [USD]")  +
+  geom_jitter( alpha = .01)  + 
+  geom_boxplot( alpha = .5,color = 'blue')+ 
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 3)
+
+```
+
+Medians for loan original amounts have been increasing since 2009 with a peak
+in 2014. In addition, there has almost not been outliers in a range over 
+30 000USD until year 2013 and 2014.
+
+
+
+# Bivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the 
+### investigation. How did the feature(s) of interest vary with other 
+### features in the dataset? 
+
+Main obesrvations:
+
+  * positive relationship between increase of loan amounts medians and
+  increase of length of loans - not a surprise
+  
+  * Medians for loan original amounts have been increasing since 2009 with a peak
+  in 2014. In addition, there has almost no outliers in a range over 
+  30 000USD until year 2013 and 2014.
+  
+  * It is evident that median BorrowerRate has been increasing over the years 
+  with a peak in 2011 and dropping again towards 2014. In addition there is 
+  a trend in narrowing IQR from 2010 onwards.
+
+  * Top 5 on average highest loans are initiated by folowing occupation groups:
+  Judges, Pharmacists and Doctors (dataset filtered on more than 
+  10 000USD loans).
+  
+  * Top 3 highest loans on average are targeting Debt consolidation, baby and 
+  adoption and business, on the other side of the spectrum top 3 lowest 
+  loans on average are targeting student use, personal loans and buying 
+  an automobile.
+
+
+
+### Did you observe any interesting relationships between the other features 
+### \(not the main feature(s) of interest)?
+
+Highest count of initiated loans in the datacomes from Professionals 
+in the income groups: 50,000-74,999USD and 100,000+ USD (if we exclude 
+combinations defined as Other)
+
+
+### What was the strongest relationship you found?
+THere is no in particular strong relationship found appart from the obvious ones
+which relate to OriginalLoanAmounts and levels of income, higher paid professions,
+increase in term length.
+I would benefit of having more in depth domain knowledge in order to scrutinize
+some of the more intricate relationships.
+
+# Multivariate Plots Section
+
+
+```{r echo=FALSE, fig.width=16, fig.height=10, Multivariate_Plots}
+
+
+MeanLoanPerOccupationPerYear <- df_s %>% 
+  group_by(Occupation,LoanOriginationYear,IsBorrowerHomeowner) %>% 
+  summarise(meanLoanOriginalAmount = mean(LoanOriginalAmount)) 
+
+ggplot(MeanLoanPerOccupationPerYear, aes(x=LoanOriginationYear, 
+                                         y=meanLoanOriginalAmount)) + 
+  geom_point(aes(col=IsBorrowerHomeowner),size=3) + 
+  facet_wrap(~Occupation) +
+   theme(axis.text.x = element_text(angle=80, vjust=0.6)) +
+   geom_hline(yintercept = 5000, color="black",size=0.5)  +
+  labs(x="Loan Originated [Year]", y="Mean Original Loan Amount [USD]")
+
+```
+
+There is a lot of information in this graph which summarizes mean loans grouped
+per year faceted per Occupation and colored by a flag if borrower is a homeowner 
+or not. 
+What can be seen at a first glance is that means are either equal or bigger if
+a borrower is a homeowner.
+Moreover, means are increasing in general regardless of occupation over 
+the period of last 5 years.
+Horisonal line on the graph is highlighting mean of 5000USD loans and by 
+focusing on points below that line we can see that they belong to a Student 
+groups which doesn't seem to change over time significantly and colors are 
+associated to a flag - is not a homeowner.
+
+
+
+```{r echo=FALSE, fig.width=16, fig.height=10}
+
+MeanLoanPerListingCathegoryPerYear <- df_s %>% 
+  group_by(ListingCathegory,LoanOriginationYear,IsBorrowerHomeowner) %>% 
+  summarise(meanLoanOriginalAmount = mean(LoanOriginalAmount)) 
+
+## plot
+ggplot(MeanLoanPerListingCathegoryPerYear, aes(x=LoanOriginationYear, 
+                                               y=meanLoanOriginalAmount)) + 
+  geom_point(aes(col=IsBorrowerHomeowner), size=3) + 
+  facet_wrap(~ListingCathegory) +
+    theme(axis.text.x = element_text(angle=80, vjust=0.6))  +
+  labs(x="Loan Originated [Year]", y="Original Loan Amount [USD]") 
+
+```
+
+Along similar lines, if a borrower is a homeowner, he or she will have on average
+similar or higher loans than if a borrower is not a homeowner.
+It is interesting to see that some of the ListingCathegories are constrained to
+last 4 years and some are more expanding over almost entire time span of a 
+dataset, like debt consolidation, home improvements, businesses and automobiles.
+In addition, personal loans and student use is absent in last 4-6 years.
+
+# Multivariate Analysis
+
+### Talk about some of the relationships you observed in this part of the 
+### \investigation. Were there features that strengthened each other 
+### in terms of \looking at your feature(s) of interest?
+
+### Were there any interesting or surprising interactions between features?
+
+There is a lot of information in two graphs in multivariate part which 
+summarizes mean loans grouped per year faceted per Occupation and colored 
+by a flag if borrower is a homeowner or not. 
+What can be seen at a first glance is that means are either equal or bigger if
+a borrower is a homeowner.
+Moreover, means are increasing in general regardless of occupation over 
+the period of last 5 years.
+Horisonal line on the graph is highlighting mean of 5000USD loans and 
+by focusing on  points below that line we can see that they belong to
+a Student groups which doesn't seem to change over time significantly 
+and colors are associated to a flag - is not a homeowner.
+
+Along similar lines, if a borrower is a homeowner, he or she will have on average
+similar or higher loans than if a borrower is not a homeowner.
+It is interesting to see that some of the ListingCathegories are constrained to
+last 4 years and some are more expanding over almost entire time span of a 
+dataset, like debt consolidation, home improvements, businesses and automobiles.
+In addition, personal loans and student use is absent in last 4-6 years.
+
+------
+
+# Final Plots and Summary
+
+### Plot One
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE, Plot_One}
+
+ggplot(data=df_s, aes(df_s$LoanOriginalAmount)) + 
+  geom_histogram(breaks=seq(0, max(df_s$LoanOriginalAmount), by = 1000), 
+                 col="black", 
+                 alpha = .6,
+                 aes(fill=..count..)) + 
+  labs(title="Histogram of the Original Loan Amounts in USD") +
+  labs(x="Original Loan Amount [USD]", y="Count") +
+  scale_fill_gradient("Count", low = "green", high = "red") 
+
+
+```
+
+### Description One
+Main feature of my interest was the maginute of original loan amounts
+Histogram shows count of the magnitude or the original loan amounts
+that borrowers have taken. What is evident from this plot is the skewness of
+the distribution with the right tail. 
+In addition, There are several local peaks breaking the ideally
+right skewed distribution.
+
+### Plot Two
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE, Plot_Two}
+fill <- "#4271AE"
+line <- "#1F3552"
+ggplot(df_s, aes(x=LoanOriginationYear, y=LoanOriginalAmount)) +
+  geom_boxplot(fill = fill, colour = line, alpha = 0.7,
+                     outlier.colour = "#1F3552", outlier.shape = 20) +
+  labs(title="Box Plot of Original Loan Amounts  vs Year Loan was initiated") +
+  labs(x="Initiation Year of the Loan", y=" Original Loan Amount [USD]")  +
+  geom_jitter( alpha = .01)  + 
+  geom_boxplot( alpha = .5,color = 'blue')+ 
+  stat_summary(fun.y = "mean", 
+               geom = "point", 
+               color = "red", 
+               shape = 8, 
+               size = 3)
+```
+
+### Description Two
+Plot two is focusing on showing a relationship of distributons of initial loan
+amounts vs year the loan is initiated.
+Medians for loan original amounts have been increasing since 2009 with a peak
+in 2014. In addition, there has almost absence of the outliers in a range over 
+30 000USD until year 2013 and 2014.
+All of the distributions are skewed.
+
+
+### Plot Three
+```{r echo=FALSE, fig.width=10, fig.height=6, message=FALSE, warning=FALSE, Plot_Three}
+
+## summarizing means for groups ListingCathegory,LoanOriginationYear,
+## IsBorrowerHomeowner
+MeanLoanPerListingCathegoryPerYear <- df_s %>% 
+  group_by(ListingCathegory,LoanOriginationYear,IsBorrowerHomeowner) %>% 
+  summarise(meanLoanOriginalAmount = mean(LoanOriginalAmount)) 
+
+## plot
+ggplot(MeanLoanPerListingCathegoryPerYear, aes(x=LoanOriginationYear, 
+                                               y=meanLoanOriginalAmount)) + 
+  geom_point(aes(col=IsBorrowerHomeowner), size=3) + 
+  facet_wrap(~ListingCathegory) +
+    theme(axis.text.x = element_text(angle=80, vjust=0.6))  +
+  labs(title="Scatter Plot of Average Original Loan Amounts vs Year Loan was 
+       Initiated") +
+  labs(x="Initiation Year of the Loan", y="Average Original Loan Amount [USD]") 
+```
+
+### Description Three
+Plot three carries a lot of information which enriches the plots from first and
+second plot with additional variables to see multivariate relationships with
+the main feature of interest - average original loan amounts per year, 
+faceted based on the listing cathegory and colored by a variable which
+says if the borrower is already a homeowner or not.
+
+What can be deduced is the following, if a borrower is a homeowner,
+he or she will have on average
+similar or higher loans than if a borrower is not a homeowner.
+It is interesting to see that some of the ListingCathegories are constrained to
+last 4 years and some are more expanding over almost entire time span of a 
+dataset, like debt consolidation, home improvements, businesses and automobiles.
+In addition, personal loans and student use are completely absent in last 4-6 
+years.
+
+------
+
+# Reflection
+
+Exploration of dataset was challenging because firstly due to the time
+constraints I had to pick and choose 10-15 variables from 81 of them which
+was not easy not having extensive domain knowledge on the topic.
+
+Univariate analyses gave me room to explore distributions 
+of most important variables in the dataset.
+
+Bivariate analyses pointed me in directions where should I focus when exploring
+two variables at the same time and increased my curiousity to explore timeseries
+change.
+
+Multivariate analyses in fully made me able to explore the relationships between
+time, magnitude of loans and two additional variables like home ownership
+and listing type in the same visualisation - very powerful tools.
+
+Some of the strugles I encountered were lack of domain knowledge in the topic
+and wrangling the datasets, preparing the data so it is in right format
+for plotting to happen in the right manner.
+
+What went pretty well is generally how I handeled the who EDA process:)
+
+As a future insight I would like to explore the dataset more in spatial domain
+and also start including more relevant variables from the full dataset.
+
+In addition I would like to spend more time into quantifying potential 
+relationships that were detected during the visual inspections of plots.
+
+
+
+### A list of Web sites, books, forums, blog posts, github repositories:
+
+http://r-statistics.co/Top50-Ggplot2-Visualizations-MasterList-R-Code.html
+
+https://www.growingfamilybenefits.com/credit-scores-interest-rates-relationship/
+
+https://stackoverflow.com/questions/15625990/how-to-set-size-for-local-image-using-knitr-for-markdown
+
+http://t-redactyl.io/blog/2016/04/creating-plots-in-r-using-ggplot2-part-10-boxplots.html
+
+https://stackoverflow.com/questions/30023610/how-to-plot-2-categorical-variables-on-x-axis-and-two-continuous-variables-as-f
+
+https://admccarthy.github.io/Red_Wines/
+
+https://docs.google.com/document/d/1-f3wM3mJSkoWxDmPjsyRnWvNgM57YUPloucOIl07l4c/pub
