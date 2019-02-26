@@ -16,14 +16,14 @@ Project Overview
 In this project, I analyzed a dataset and then communicated my findings about it. I utilized Python libraries NumPy, pandas, and Matplotlib to make your analysis easier.
 Dataset contains 113,937 loans with 81 variables on each loan, including loan amount, borrower rate (or interest rate), current loan status, borrower income, borrower employment status, borrower credit history, and the latest payment information.
 
-[Link to the project]()
+![Link to the project]()
 
 
 ## Understanding the results of an A/B test run by an e-commerce website
 
 For this project, I worked to understand the results of an A/B test run by an e-commerce website. The company has developed a new web page in order to try and increase the number of users who "convert," meaning the number of users who decide to pay for the company's product. Your goal is to work through this notebook to help the company understand if they should implement this new page, keep the old page, or perhaps run the experiment longer to make their decision.
 
-[Link to the project](ABTesting/AnalyzeABTestingResults.ipynb)
+![Link to the project](ABTesting/AnalyzeABTestingResults.ipynb)
 
 ## Investigate a classic phenomenon from experimental psychology called the Stroop Effect
 
