@@ -1,6 +1,6 @@
 # Data Analyst Nanodegree - Udacity
 
-![Data Analyst Nanodegree Diploma](./imgs/diploma.jpg)
+![Data Analyst Nanodegree Diploma](imgs/diploma.jpg)
 
 Link to finalized projects that were reviewed and approved by Udacity in order to meet the requirements for obtaining the `Data Analyst Nanodegree`:
 
@@ -23,7 +23,7 @@ Dataset contains 113,937 loans with 81 variables on each loan, including loan am
 
 For this project, I worked to understand the results of an A/B test run by an e-commerce website. The company has developed a new web page in order to try and increase the number of users who "convert," meaning the number of users who decide to pay for the company's product. Your goal is to work through this notebook to help the company understand if they should implement this new page, keep the old page, or perhaps run the experiment longer to make their decision.
 
-[Link to the project]()
+[Link to the project](ABTesting/AnalyzeABTestingResults.ipynb)
 
 ## Investigate a classic phenomenon from experimental psychology called the Stroop Effect
 
