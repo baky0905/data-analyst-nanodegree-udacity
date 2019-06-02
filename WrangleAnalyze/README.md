@@ -1,3 +1,9 @@
+
+[Link to the jupyter notebook](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_act.ipynb)
+
+[Link to the summary report](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_report.pdf)
+
+
 ## Project Details
 
 
@@ -28,8 +34,4 @@ Store the clean DataFrame(s) in a CSV file with the main one named twitter_archi
 
 
 Analyze and visualize your wrangled data in your wrangle_act.ipynb Jupyter Notebook. At least three (3) insights and one (1) visualization must be produced.
-
-[Link to the jupyter notebook](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_act.ipynb)
-
-[Link to the summary report](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_report.pdf)
 
