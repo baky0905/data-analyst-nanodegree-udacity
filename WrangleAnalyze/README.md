@@ -31,5 +31,5 @@ Analyze and visualize your wrangled data in your wrangle_act.ipynb Jupyter Noteb
 
 [Link to the jupyter notebook](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_act.ipynb)
 
-[Link to the summary report] (https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_report.pdf)
+[Link to the summary report](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_report.pdf)
 
