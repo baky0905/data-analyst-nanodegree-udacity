@@ -26,11 +26,10 @@ Clean each of the issues you documented while assessing. Perform this cleaning i
 ### Storing, Analyzing, and Visualizing Data for this Project
 Store the clean DataFrame(s) in a CSV file with the main one named twitter_archive_master.csv. If additional files exist because multiple tables are required for tidiness, name these files appropriately. Additionally, you may store the cleaned data in a SQLite database (which is to be submitted as well if you do).
 
+
 Analyze and visualize your wrangled data in your wrangle_act.ipynb Jupyter Notebook. At least three (3) insights and one (1) visualization must be produced.
 
-Reporting for this Project
-Create a 300-600 word written report called wrangle_report.pdf or wrangle_report.html that briefly describes your wrangling efforts. This is to be framed as an internal document.
+[Link to the jupyter notebook](https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_act.ipynb)
 
-Create a 250-word-minimum written report called act_report.pdf or act_report.html that communicates the insights and displays the visualization(s) produced from your wrangled data. This is to be framed as an external document, like a blog post or magazine article, for example.
+[Link to the summary report] (https://github.com/baky0905/data-analyst-nanodegree-udacity/blob/master/WrangleAnalyze/wrangle_report.pdf)
 
-Both of these documents can be created in separate Jupyter Notebooks using the Markdown functionality of Jupyter Notebooks, then downloading those notebooks as PDF files or HTML files (see image below). You might prefer to use a word processor like Google Docs or Microsoft Word, however.
